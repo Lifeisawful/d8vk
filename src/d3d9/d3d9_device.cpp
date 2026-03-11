@@ -54,7 +54,8 @@ namespace dxvk {
     , m_multithread     ( BehaviorFlags & D3DCREATE_MULTITHREADED )
     , m_isSWVP          ( (BehaviorFlags & D3DCREATE_SOFTWARE_VERTEXPROCESSING) ? true : false )
     , m_csThread        ( dxvkDevice, dxvkDevice->createContext() )
-    , m_csChunk         ( AllocCsChunk() ) {
+    , m_csChunk         ( AllocCsChunk() ) 
+    , m_d3d8Bridge      ( this ) {
     // If we can SWVP, then we use an extended constant set
     // as SWVP has many more slots available than HWVP.
     bool canSWVP = CanSWVP();
@@ -212,6 +213,10 @@ namespace dxvk {
      || riid == __uuidof(IDirect3DDevice9)
      || extended) {
       *ppvObject = ref(this);
+      return S_OK;
+    }
+    if (riid == __uuidof(IDxvkD3D8Bridge)) {
+      *ppvObject = ref(&m_d3d8Bridge);
       return S_OK;
     }
 
@@ -2344,7 +2349,8 @@ namespace dxvk {
     try {
       const Com<D3D9StateBlock> sb = new D3D9StateBlock(this, ConvertStateBlockType(Type));
       *ppSB = sb.ref();
-      m_losableResourceCounter++;
+      if (!m_isD3D8Compatible)
+        m_losableResourceCounter++;
 
       return D3D_OK;
     }
@@ -2376,6 +2382,8 @@ namespace dxvk {
       return D3DERR_INVALIDCALL;
 
     *ppSB = m_recorder.ref();
+    if (!m_isD3D8Compatible)
+      m_losableResourceCounter++;
     m_losableResourceCounter++;
     m_recorder = nullptr;
 

@@ -30,6 +30,7 @@
 
 #include <cstdint>
 #include <unordered_set>
+#include "d3d9_bridge.h"
 
 #include <vector>
 #include <type_traits>
@@ -130,6 +131,7 @@ namespace dxvk {
     friend struct D3D9WindowContext;
     friend class D3D9ConstantBuffer;
     friend class D3D9UserDefinedAnnotation;
+    friend class DxvkD3D8Bridge;
   public:
 
     D3D9DeviceEx(
@@ -989,6 +991,17 @@ namespace dxvk {
     void TouchMappedTexture(D3D9CommonTexture* pTexture);
     void RemoveMappedTexture(D3D9CommonTexture* pTexture);
 
+    bool IsD3D8Compatible() const {
+      return m_isD3D8Compatible;
+    }
+
+    void SetD3D8CompatibilityMode(bool compatMode) {
+      if (compatMode)
+        Logger::info("The D3D9 device is now operating in D3D8 compatibility mode.");
+
+      m_isD3D8Compatible = compatMode;
+    }
+
     // Device Lost
     bool IsDeviceLost() const {
       return m_deviceLostState != D3D9DeviceLostState::Ok;
@@ -1348,6 +1361,7 @@ namespace dxvk {
     D3D9ShaderMasks                 m_psShaderMasks = FixedFunctionMask;
 
     bool                            m_isSWVP;
+    bool                            m_isD3D8Compatible = false;
     bool                            m_amdATOC         = false;
     bool                            m_nvATOC          = false;
     bool                            m_ffZTest         = false;
@@ -1402,6 +1416,8 @@ namespace dxvk {
     // m_state should be declared last (i.e. freed first), because it
     // references objects that can call back into the device when freed.
     Direct3DState9                  m_state;
+
+    DxvkD3D8Bridge                  m_d3d8Bridge;
   };
 
 }
